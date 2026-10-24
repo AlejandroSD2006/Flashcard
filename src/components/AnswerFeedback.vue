@@ -9,10 +9,13 @@ defineProps({
 
 <template>
   <div class="feedback" aria-live="polite">
-    <p v-if="status === 'correct'" class="feedback-message feedback-message--success">
-      <span class="feedback-icon" aria-hidden="true">✓</span>
-      ¡CORRECTO!
-    </p>
+    <div v-if="status === 'correct'" class="feedback-message feedback-message--success">
+      <p class="feedback-title">
+        <span class="feedback-icon" aria-hidden="true">✓</span>
+        ¡CORRECTO! Es: <strong>{{ correctAnswer }}</strong>
+      </p>
+      <p v-if="description" class="feedback-description">{{ description }}</p>
+    </div>
 
     <p v-else-if="status === 'incorrect'" class="feedback-message feedback-message--error">
       <span class="feedback-icon" aria-hidden="true">✕</span>
@@ -46,6 +49,13 @@ defineProps({
   animation: feedback-pop 0.2s ease;
 }
 
+.feedback-message--success,
+.feedback-message--error {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
 .feedback-message--success {
   background: var(--color-success-bg);
   color: var(--color-success);
@@ -54,9 +64,6 @@ defineProps({
 .feedback-message--error {
   background: var(--color-error-bg);
   color: var(--color-error);
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
 }
 
 .feedback-title {
