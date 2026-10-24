@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { shuffle } from '../utils/shuffle.js'
+import { scoreForAnswer } from '../utils/scoring.js'
 
 /**
  * Gestiona el recorrido de una sesión de estudio sobre una lista fija de
@@ -18,6 +19,8 @@ export function useStudySession(sessionCards) {
   const results = ref(Array(sessionCards.length).fill(null))
   const startedAt = ref(Date.now())
   const finishedAt = ref(null)
+  const currentStreak = ref(0)
+  const bestStreakInSession = ref(0)
 
   const totalCards = computed(() => cards.value.length)
   const currentCard = computed(() => cards.value[currentIndex.value] ?? null)
@@ -33,9 +36,25 @@ export function useStudySession(sessionCards) {
       : 0,
   }))
 
-  /** Registra el resultado de la tarjeta actual. outcome: 'first' | 'retry' | 'failed'. */
+  /**
+   * Registra el resultado de la tarjeta actual y calcula sus puntos (ver
+   * `utils/scoring.js`). outcome: 'first' | 'retry' | 'failed'. La racha de aciertos
+   * consecutivos se actualiza aquí: crece con cada acierto y se reinicia a 0 en
+   * cualquier fallo total, para que el multiplicador de racha no pueda acumularse de
+   * forma incoherente.
+   */
   function recordResult(outcome, attemptsUsed) {
-    results.value[currentIndex.value] = { outcome, attemptsUsed }
+    const streakBefore = currentStreak.value
+    const points = scoreForAnswer({ outcome, attemptsUsed, streakBefore })
+
+    if (outcome === 'failed') {
+      currentStreak.value = 0
+    } else {
+      currentStreak.value += 1
+      bestStreakInSession.value = Math.max(bestStreakInSession.value, currentStreak.value)
+    }
+
+    results.value[currentIndex.value] = { outcome, attemptsUsed, points, streakBefore }
   }
 
   /** Avanza a la siguiente tarjeta. Solo funciona si la actual ya tiene resultado. */
@@ -60,8 +79,19 @@ export function useStudySession(sessionCards) {
     const correct = firstTry + retryTry
     const percentage = total ? Math.round((correct / total) * 100) : 0
     const durationMs = (finishedAt.value ?? Date.now()) - startedAt.value
+    const totalScore = recorded.reduce((sum, r) => sum + r.points.total, 0)
 
-    return { total, firstTry, retryTry, failed, correct, percentage, durationMs }
+    return {
+      total,
+      firstTry,
+      retryTry,
+      failed,
+      correct,
+      percentage,
+      durationMs,
+      totalScore,
+      bestStreakInSession: bestStreakInSession.value,
+    }
   })
 
   return {
@@ -72,6 +102,7 @@ export function useStudySession(sessionCards) {
     totalCards,
     progress,
     isSessionFinished,
+    currentStreak,
     recordResult,
     goToNext,
     summary,

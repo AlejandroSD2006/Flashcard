@@ -1,8 +1,12 @@
 # Flashcards Visuales
 
-Aplicación web de flashcards basada en fotografías: importa imágenes propias, define la respuesta correcta de cada una y estúdialas como un juego de memoria con hasta tres intentos por tarjeta.
+Juego de memoria con fotografías propias, con una capa de gamificación estilo
+Duolingo: puntos, racha, nivel/XP, insignias, ranking local y un modo Duelo 1vs1 en el
+mismo dispositivo.
 
-Construida con **Vue 3 (Composition API) + Vite**, 100% en el navegador (sin backend). Las colecciones se guardan en **IndexedDB**, así que persisten entre recargas de la página.
+Construida con **Vue 3 (Composition API) + Vite**, 100% en el navegador (sin backend).
+Las tarjetas e imágenes se guardan en **IndexedDB**; el perfil, el ranking y las
+insignias en **localStorage**. Todo persiste entre recargas de la página.
 
 ## Instalación y arranque
 
@@ -15,74 +19,137 @@ npm run dev
 
 Abre la URL que indique la terminal (por defecto `http://localhost:5173`).
 
-Para generar la build de producción:
-
 ```bash
-npm run build
-npm run preview   # sirve la build generada, opcional
+npm run build      # build de producción
+npm run preview    # sirve la build generada, opcional
+npm test           # pruebas unitarias
 ```
 
-Para ejecutar las pruebas unitarias:
+## Pantallas
 
-```bash
-npm test
-```
+La barra superior (siempre visible) da acceso a:
 
-## Cómo se usa
+- **Inicio** — menú principal con accesos directos a cada sección.
+- **Jugar** — si tu colección ya tiene tarjetas listas, entra directo a una sesión de
+  estudio individual (orden aleatorio cada vez); si no, te lleva a "Mis colecciones".
+- **Mis colecciones** — importar/arrastrar imágenes (JPG, JPEG, PNG, WebP), editar
+  nombre/alternativas/explicación de cada tarjeta, reordenar, eliminar, generar tarjetas
+  de ejemplo aleatorias, y el campo de "nombre de jugador" antes de empezar.
+- **Duelo 1vs1** — dos jugadores compiten por turnos en el mismo dispositivo (ver más
+  abajo).
+- **Ranking** — mejores puntuaciones locales (individual y de duelos), con podio,
+  medallas y filtros.
+- **Progreso** — tu nivel, XP, récords, racha, insignias y las reglas de puntuación.
 
-1. **Prepara tu colección.** En la pantalla inicial, arrastra o selecciona imágenes (JPG, JPEG, PNG o WebP). Cada imagen se añade como una tarjeta nueva. Si quieres probar la app sin fotos propias, usa el botón "Cargar tarjetas de ejemplo aleatorias": genera tarjetas con nombre, alternativas, explicación e imagen placeholder (dibujada en un `<canvas>`) listas para estudiar.
-2. **Completa cada tarjeta.** Escribe el nombre o respuesta correcta (obligatorio), respuestas alternativas separadas por comas (opcional) y una breve explicación (opcional, recomendada). Puedes reordenar las tarjetas con las flechas o eliminarlas.
-3. **Comienza la sesión.** El botón "Comenzar sesión de estudio" comprueba que todas las tarjetas tengan imagen y respuesta antes de arrancar.
-4. **Estudia.** Se muestra una fotografía a la vez. Escribe tu respuesta y pulsa "Comprobar respuesta" (o Enter). Tienes 3 intentos por tarjeta:
-   - Acierto → mensaje "¡CORRECTO!" y se habilita "Siguiente tarjeta".
-   - Fallo con intentos restantes → mensaje de error y puedes volver a intentarlo.
-   - Tres fallos → se revela la respuesta correcta y la explicación.
-5. **Resultados.** Al terminar todas las tarjetas se muestra un resumen (aciertos al primer intento, aciertos en 2º/3er intento, fallos totales, porcentaje y tiempo total), con opciones para repetir la sesión o volver a editar la colección.
+## Sesión individual
+
+Se muestra una fotografía; escribes tu respuesta (Enter o "Comprobar respuesta") con
+hasta **3 intentos**. Acertar muestra una celebración (más intensa si es al primer
+intento, con confeti y un mensaje grande); fallar sacude la tarjeta y avisa de los
+intentos restantes, remarcando el último. Tras 3 fallos se revela la respuesta y la
+explicación. Al terminar, se guarda tu resultado real en el ranking individual, se suma
+XP a tu perfil y se comprueban las insignias nuevas.
+
+### Puntuación
+
+- Acierto al 1er intento: **100 pts** + 20 de bonus.
+- Acierto al 2º intento: **70 pts**. Al 3er intento: **40 pts**.
+- Fallar los 3 intentos: **0 pts**, y se reinicia tu racha.
+- Racha de aciertos consecutivos: multiplicador creciente sobre la base, hasta un tope
+  de **x2** a partir de 10 aciertos seguidos (ver `utils/scoring.js`).
+
+Las reglas completas también se muestran en la pantalla "Progreso".
+
+### Progresión
+
+XP por tarjeta (30 al primer intento, 20 en 2º/3º, 5 de participación si falla),
+nivel con umbrales crecientes, récord personal, mejor racha, tarjetas resueltas y
+aciertos al primer intento — todo calculado a partir de resultados reales, nunca
+simulado. Insignias desbloqueables: *Primer paso*, *Ojo de halcón* (5 aciertos al primer
+intento en una sesión), *Imparable* (racha de 5), *Perfeccionista* (sesión sin fallos) y
+*Coleccionista* (colección de 20 tarjetas).
+
+## Ranking
+
+Local a este navegador (no es una clasificación de Internet, y se indica en la propia
+pantalla). Pestañas para el ranking individual y el de duelos, podio con medallas para
+el top 3, filtro "mejores puntuaciones" / "todas las partidas", resalta la partida que
+acabas de jugar, y un botón para reiniciar el ranking con confirmación previa.
+
+## Duelo 1vs1 local
+
+Dos personas se turnan en el mismo dispositivo con la colección actual:
+
+1. **Configuración**: nombre de ambos jugadores y número de rondas por jugador
+   (limitado a la mitad de las tarjetas disponibles, para que a cada jugador le toquen
+   fotografías distintas y nadie tenga ventaja).
+2. **Turnos alternados**: cada jugador responde su propia fotografía con hasta 3
+   intentos, siguiendo las mismas reglas de puntuación que el modo individual (racha y
+   bonus independientes por jugador).
+3. **Pantalla de privacidad**: al terminar un turno se oculta la respuesta y aparece
+   "Pasa el dispositivo a [nombre]" antes de mostrar la siguiente fotografía — no hay
+   forma de volver atrás ni de ver respuestas anteriores.
+4. **Resultado final**: puntuación y aciertos de cada jugador, ganador (o empate),
+   diferencia de puntos, celebración animada, y botones de "Revancha" o "Volver al
+   menú". Cada partida se guarda una sola vez en el ranking de duelos.
+
+El Duelo no modifica el perfil individual (XP/nivel/insignias): son dos personas
+distintas compartiendo el dispositivo, así que solo alimenta su propio ranking.
 
 ## Estructura del proyecto
 
 ```
 src/
   components/
-    ImageUploader.vue      # Selección y arrastre de imágenes
-    FlashcardEditor.vue    # Pantalla de colección: alta, edición, orden y arranque de sesión
-    FlashcardStudy.vue     # Pantalla de estudio: imagen, respuesta, intentos
-    ProgressBar.vue        # Barra e indicador "Tarjeta X de Y"
-    AnswerFeedback.vue     # Mensajes de correcto / incorrecto / fallo
-    SessionResults.vue     # Resumen final de la sesión
+    ImageUploader.vue, FlashcardEditor.vue, FlashcardStudy.vue,
+    ProgressBar.vue, AnswerFeedback.vue, SessionResults.vue   # núcleo del modo individual
+    AppNav.vue, HomeScreen.vue                                 # navegación y menú principal
+    ScoreHud.vue, AnimatedNumber.vue, CelebrationBurst.vue      # feedback de juego
+    RankingView.vue, ProfileStats.vue                           # ranking y progresión
+    DuelSetup.vue, DuelPlay.vue, Duel.vue                        # modo Duelo 1vs1
   composables/
-    useFlashcards.js       # Estado de la colección + persistencia en IndexedDB
-    useAnswerValidation.js # Lógica de intentos (máx. 3) para una tarjeta
-    useStudySession.js     # Progreso y estadísticas de una sesión de estudio
+    useFlashcards.js        # colección + persistencia en IndexedDB
+    useAnswerValidation.js  # intentos (máx. 3) de una tarjeta — reutilizado en Duelo
+    useStudySession.js      # progreso, puntuación y estadísticas de una sesión
+    useDuelSession.js       # turnos, reparto de cartas y marcador del Duelo
+    usePlayerProfile.js     # XP, nivel, récords e insignias (localStorage)
+    useLeaderboard.js       # rankings persistidos (individual y duelos)
+    useReducedMotion.js     # respeta prefers-reduced-motion
   utils/
-    normalizeAnswer.js     # Normalización de texto y comparación de respuestas
-    db.js                  # Acceso de bajo nivel a IndexedDB (vía `idb`)
-  App.vue                  # Orquesta las pantallas: colección / estudio / resultados
-  main.js
-  style.css                # Variables de diseño y estilos base compartidos
+    normalizeAnswer.js, scoring.js, xp.js, duel.js, shuffle.js,
+    seedData.js, db.js, localStore.js
+  data/
+    badges.js               # definiciones de insignias
+  App.vue, main.js, style.css
 ```
 
 ## Validación de respuestas
 
-Antes de comparar, cada respuesta se normaliza (`utils/normalizeAnswer.js`):
-
-- Se recortan los espacios al principio y al final.
-- Los espacios repetidos se colapsan en uno.
-- Se convierte todo a minúsculas.
-- Se eliminan tildes y diacríticos (por ejemplo, "AVIÓN" y "avion" se consideran iguales).
-
-Una respuesta vacía nunca cuenta como intento.
-
-**Tolerancia a erratas (conservadora):** si la respuesta normalizada no coincide exactamente con la correcta ni con ninguna alternativa, se acepta igualmente cuando la distancia de edición (Levenshtein) respecto a una de ellas es de **como máximo 1 carácter**, y solo si esa respuesta válida tiene **4 o más caracteres**. Para respuestas de 3 caracteres o menos se exige coincidencia exacta, para evitar aceptar palabras distintas que casualmente se parecen ("sol" vs "sal").
+Antes de comparar, cada respuesta se normaliza (`utils/normalizeAnswer.js`): se recortan
+espacios, se colapsan los repetidos, se ignoran mayúsculas/minúsculas y tildes. Una
+respuesta vacía nunca cuenta como intento. Tolerancia conservadora a erratas: se acepta
+una distancia de edición de como máximo 1 carácter, solo si la respuesta válida tiene 4
+o más caracteres (para evitar aceptar palabras cortas distintas que se parecen, como
+"sol" / "sal").
 
 ## Persistencia
 
-Las imágenes (como `Blob`) y los datos de cada tarjeta se guardan en IndexedDB mediante la librería `idb`. Al cargar la aplicación se recuperan todas las tarjetas y se generan URLs de objeto en memoria para mostrarlas; estas URLs nunca se guardan ni se reutilizan entre sesiones, por lo que no hay riesgo de enlaces rotos tras recargar la página.
+Imágenes y datos de cada tarjeta en **IndexedDB** (vía `idb`), con URLs de objeto
+regeneradas en memoria al cargar (nunca se guardan, así que no hay enlaces rotos tras
+recargar). Perfil, ranking individual y ranking de duelos en **localStorage**
+(`utils/localStore.js`, con lectura/escritura segura ante errores de almacenamiento).
 
 ## Limitaciones conocidas
 
-- No hay backend ni sincronización entre dispositivos: la colección vive solo en el navegador donde se creó (y se pierde si se borran los datos del sitio).
-- No se ha implementado una pantalla de "deshacer" al eliminar una tarjeta: la eliminación es inmediata.
-- La tolerancia a erratas es intencionadamente conservadora (1 carácter en palabras de 4+ letras); no corrige errores gramaticales o de orden de palabras.
-- No se incluyen pruebas automatizadas de los componentes Vue (solo de la lógica de normalización y de intentos); la interfaz se ha verificado mediante compilación y ejecución del servidor de desarrollo.
-- No hay exportación/importación de colecciones entre navegadores o copias de seguridad.
+- Una sola colección local por navegador: el Duelo usa siempre la colección actual, no
+  hay selector de varios mazos guardados.
+- No hay racha diaria (mecánica opcional que se deja fuera en esta versión).
+- No hay backend ni sincronización entre dispositivos; todo vive en el navegador donde
+  se creó.
+- La tolerancia a erratas es intencionadamente conservadora; no corrige errores
+  gramaticales ni de orden de palabras.
+- No se incluyen pruebas automatizadas de los componentes Vue (sí de la lógica pura:
+  normalización, intentos, puntuación, XP y Duelo); la interfaz se ha verificado
+  mediante compilación y ejecución del servidor de desarrollo, sin navegador disponible
+  en este entorno para una prueba visual.
+- No hay exportación/importación de colecciones o del perfil entre navegadores.

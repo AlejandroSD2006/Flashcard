@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useFlashcards } from '../composables/useFlashcards.js'
+import { usePlayerProfile } from '../composables/usePlayerProfile.js'
 import ImageUploader from './ImageUploader.vue'
 
 const emit = defineEmits(['start-session'])
@@ -16,6 +17,9 @@ const {
   seedRandomCards,
   isCardReady,
 } = useFlashcards()
+
+const { profile, setPlayerName } = usePlayerProfile()
+const playerNameInput = ref(profile.value.playerName)
 
 const startError = ref('')
 const isSeeding = ref(false)
@@ -85,6 +89,7 @@ function startSession() {
   }
 
   startError.value = ''
+  setPlayerName(playerNameInput.value)
   const sessionCards = cards.value.map((card) => ({
     id: card.id,
     name: card.name.trim(),
@@ -206,6 +211,10 @@ function startSession() {
         </ul>
 
         <div class="start-area">
+          <label class="field player-name-field">
+            <span class="field-label">Tu nombre de jugador</span>
+            <input v-model="playerNameInput" type="text" placeholder="Jugador" maxlength="30" />
+          </label>
           <p v-if="startError" class="start-error" role="alert">{{ startError }}</p>
           <button type="button" class="btn btn-primary btn-start" @click="startSession">
             Comenzar sesión de estudio
@@ -356,6 +365,11 @@ function startSession() {
   flex-direction: column;
   align-items: flex-end;
   gap: var(--space-2);
+}
+
+.player-name-field {
+  width: 100%;
+  max-width: 280px;
 }
 
 .start-error {
