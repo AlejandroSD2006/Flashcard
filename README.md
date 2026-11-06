@@ -1,12 +1,27 @@
 # Flashcards Visuales
 
-Juego de memoria con fotografías propias, con una capa de gamificación estilo
-Duolingo: puntos, racha, nivel/XP, insignias, ranking local y un modo Duelo 1vs1 en el
-mismo dispositivo.
+Juego de memoria con fotografías propias y una capa de gamificación: puntos, racha, nivel y XP, insignias, ranking local y un modo Duelo 1 contra 1 en el mismo dispositivo. Funciona entero en el navegador, sin backend.
 
-Construida con **Vue 3 (Composition API) + Vite**, 100% en el navegador (sin backend).
-Las tarjetas e imágenes se guardan en **IndexedDB**; el perfil, el ranking y las
-insignias en **localStorage**. Todo persiste entre recargas de la página.
+![Vue 3](https://img.shields.io/badge/Vue_3-151A21?style=flat-square&logo=vuedotjs&logoColor=5EEAD4)
+![Vite](https://img.shields.io/badge/Vite-151A21?style=flat-square&logo=vite&logoColor=5EEAD4)
+![Vitest](https://img.shields.io/badge/Vitest-151A21?style=flat-square&logo=vitest&logoColor=5EEAD4)
+![IndexedDB](https://img.shields.io/badge/IndexedDB-151A21?style=flat-square)
+
+## Resumen
+
+| | |
+|---|---|
+| **Modos** | Sesión individual y Duelo 1vs1 por turnos |
+| **Datos** | Imágenes y tarjetas en IndexedDB; perfil y rankings en localStorage |
+| **Calidad** | 48 pruebas unitarias (Vitest) sobre puntuación, validación de respuestas y lógica del duelo |
+| **Accesibilidad** | Respeta `prefers-reduced-motion` |
+
+## Decisiones de diseño
+
+- **La lógica de juego no vive en los componentes.** Intentos, puntuación, sesión, duelo, perfil y ranking son composables y utilidades independientes de la interfaz, y por eso se pueden probar sin montar ningún componente.
+- **Validación tolerante pero conservadora.** Las respuestas se normalizan (tildes, mayúsculas, espacios) y se acepta una errata de un carácter solo en respuestas de 4 o más letras, para no confundir palabras cortas como "sol" y "sal".
+- **Sin enlaces rotos al recargar.** Las URLs de las imágenes se regeneran en memoria al cargar; lo que se persiste son los datos de las tarjetas.
+- **Duelo justo y privado.** Las rondas se limitan a la mitad de las tarjetas para que cada jugador tenga fotografías distintas, y una pantalla intermedia oculta la respuesta al pasar el dispositivo.
 
 ## Instalación y arranque
 
